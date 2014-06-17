@@ -12,6 +12,14 @@ describe "Auditable::Audit#version" do
       model.audits.last.version.should eql 110
     end
 
+    it "should have a unique version" do
+      model.update_attributes :title => 'Non-Unique Version Change'
+
+      audit = model.audits.last
+      audit.version = 110
+      expect { audit.save }.to raise_error(ActiveRecord::RecordNotUnique)
+    end
+
     it "it should call #latest_version on snap" do
       model.should_receive(:latest_version) { 12345 }
       model.update_attributes :title => 'Another Test'

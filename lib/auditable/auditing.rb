@@ -259,13 +259,20 @@ module Auditable
         # If version is enabled, wrap in a transaction to get the next version number
         # before saving
         if self.class.audited_version
-          ActiveRecord::Base.transaction do
-            if self.class.audited_version.is_a? Symbol
-              audit.version = self.send( self.class.audited_version )
-            else
-              audit.version = (audits.maximum('version')||0) + 1
+          begin
+            # Making sure we only retry 2 times
+            tries ||= 2
+
+            ActiveRecord::Base.transaction do
+              if self.class.audited_version.is_a? Symbol
+                audit.version = self.send( self.class.audited_version )
+              else
+                audit.version = (audits.maximum('version')||0) + 1
+              end
+              audit.save
             end
-            audit.save
+          rescue ActiveRecord::RecordNotUnique
+            retry unless (tries -= 1).zero?
           end
 
         # Save as usual
