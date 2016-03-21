@@ -260,8 +260,8 @@ module Auditable
         # before saving
         if self.class.audited_version
           begin
-            # Making sure we only retry 2 times
-            tries ||= 2
+            # Make sure we don't retry forever
+            tries ||= 4
 
             ActiveRecord::Base.transaction do
               if self.class.audited_version.is_a? Symbol
